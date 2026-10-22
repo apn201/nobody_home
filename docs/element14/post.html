@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nobody Home - element14 post</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 860px; margin: 0 auto; padding: 16px; line-height: 1.55; color: #1d1b22; background: #faf8f5; }
+  h1, h2, h3 { font-family: Helvetica, Arial, sans-serif; }
+  pre { background: #1c1925; color: #e8e4ef; padding: 12px; overflow-x: auto; font-size: 13px; }
+  code { background: #eee9f2; padding: 0 3px; }
+  img { max-width: 100%; }
+  table { border-collapse: collapse; margin: 8px 0; font-size: 14px; }
+  td, th { border: 1px solid #c9c2d2; padding: 4px 8px; text-align: left; }
+  .field { background: #fff3e6; border-left: 4px solid #D9691A; padding: 8px 12px; margin: 12px 0; }
+  .note { color: #7a6f86; font-size: 13px; }
+  .fill { background: #ffe08a; }
+</style>
+</head>
+<body>
+
+<p class="note">Preview of the element14 project page. The orange boxes are the separate form fields. Everything under "Body" goes into the Body editor, "References" into the references editor. Images: drag each file from <code>docs/element14/img/</code> into the editor where the image sits here, then add the alt text. Yellow = still to fill.</p>
+
+<div class="field"><b>Project Name</b><br>Nobody Home: the cursed doll that only moves when you leave the room</div>
+
+<div class="field"><b>Abstract</b> (214 characters)<br>A cursed doll turns its head only when nobody is there. No PIR, no camera. An M5Stack AtomS3R pings the router 100 times a second and reads WiFi CSI. Anyone moving nearby, even behind a closed door, and it freezes.</div>
+
+<div class="field"><b>Thumbnail</b><br>img/thumbnail_300.png (made from the real CSI waterfall). A crop of the doll photo works too.</div>
+
+<div class="field"><b>Tags</b><br>halloween, esp32, esp32-s3, m5stack, wifi, csi, rf, signal processing, servo, sg90, animatronic, 3d printing</div>
+
+<h1>Body</h1>
+
+<h2>A doll that moves when nobody is home</h2>
+
+<p><img src="img/photo_doll.jpg" alt="Baby doll on the desk with an SG90 servo in its neck, AtomS3R next to it showing the CSI scope"></p>
+
+<p>This is a doll that turns its head only when nobody is in the room. Actually it is an M5Stack AtomS3R and a SG90 micro servo, listening to wifi. The router is the only sensor. When someone comes near, even outside a closed door, it stops dead in whatever pose it has reached, and waits.</p>
+
+<p>I'm still in love with exploring what tiny cheap esp32 based controllers can do. The 3 M5 Atom devices lie on my desk, so it was an easy bet. But a microcontroller alone does not really differ from a PC, and for Halloween we need something kinetic. I did the over-engineered version of that already (home automation reads a PIR and makes a Zigbee Fingerbot push the button on a camera. A lot of infrastructure to push one button). So this time "underengineered".</p>
+
+<p>Unknown is scary. It's more scary to realize an object has moved than to actually see it move. So I turned the concept upside down: it only moves when nobody is there to see it. No need for audio either. The sound of a servo in an empty room is the most scary thing, and it stops when you enter.</p>
+
+<p>Then I remembered the dozens of projects where people "see through walls" with wifi CSI. We do not need to see through walls. We just need to know when nobody is near. Wifi is already there, so no extra sensor. And one thing simplifies the whole problem: false positives do not matter. Who cares if the servo stops when nobody is there. It just must never move when a person is near.</p>
+
+<p>And the same problem as checking the fridge light: how do you know it moves if you can't be in the room? My IP surveillance camera films it. No CGI, no editing, no effects.</p>
+
+<h2>The video</h2>
+
+<p class="fill">[VIDEO: embed here. One line on what it shows and where (library area).]</p>
+
+<h2>Hardware</h2>
+
+<table>
+<tr><th>Part</th><th>What it does</th></tr>
+<tr><td>M5Stack AtomS3R (ESP32-S3, 8 MB flash, 8 MB PSRAM, 128x128 LCD, BMI270 IMU)</td><td>Receives wifi, computes CSI, decides, drives the servo. The same one that ran my <a href="https://github.com/apn201/Micro_Arcade">Micro Arcade</a>.</td></tr>
+<tr><td>SG90 micro servo</td><td>Turns the head. Signal on Grove G2, 5V and GND from the Grove port.</td></tr>
+<tr><td>Grove cable</td><td>Cut and soldered to the servo lead.</td></tr>
+<tr><td>Doll</td><td>Head off, servo inside the body, head back on a 3D printed adapter on the horn.</td></tr>
+<tr><td>5 V USB-C supply</td><td>Powers everything.</td></tr>
+<tr><td>Wifi router (Google Nest mesh, channel 11)</td><td>The transmitter. Already there.</td></tr>
+</table>
+
+<p><img src="img/photo_bench.jpg" alt="AtomS3R showing the live CSI scope next to a bare SG90 servo"></p>
+
+<p><img src="img/08_wiring.png" alt="Wiring: AtomS3R Grove GND, 5V and G2 to the SG90 brown, red and orange wires"></p>
+
+<p>Wiring is three wires. I had to swap two of them before it moved (the colours on my Grove cable did not match M5's table, so check with a meter). The spec had a 1000 uF capacitor across the servo supply, against brownouts when servo current and wifi TX peak together. In the first 75 minute run with 167 moves there was not a single reset without it, but that run had nothing on the horn. <span class="fill">[fill: did it reset with the head on? cap added or not?]</span></p>
+
+<p><img src="img/photo_neck.jpg" alt="3D printed adapter between the servo horn and the doll's neck, servo visible inside the body"></p>
+
+<p>The neck: <span class="fill">[fill: two lines on the printed adapter, how it holds the horn and the head]</span></p>
+
+<h2>Radio part: what CSI is</h2>
+
+<p>Wifi (802.11n, 20 MHz) is OFDM. The channel is split into 64 subcarriers, 312.5 kHz apart. Every frame starts with a training field (the LLTF) the receiver already knows. Dividing what arrived by what was sent gives the channel on each subcarrier. That is Channel State Information. The ESP32 hands it out per frame, as int8 I/Q pairs, in a callback.</p>
+
+<pre>
+Y_k = H_k * X_k + N_k            k = subcarrier, X_k known (LLTF)
+H_k ~ Y_k / X_k                  complex channel estimate
+a_k = |H_k| = sqrt(I_k^2 + Q_k^2)
+
+f_c    = 2462 MHz (channel 11)
+lambda = c / f_c = 12.19 cm
+f_k    = f_c + k * 312.5 kHz,  k = -26..-1, 2..26  -&gt; 51 subcarriers used
+</pre>
+
+<p>(Subcarrier 0 is DC, beyond +-26 are guards. Subcarrier 1 sits in the first word of the buffer, which the S3 can flag invalid, so I skip it every time to keep the feature consistent.)</p>
+
+<p>Indoors the signal arrives over many paths: direct, off the walls, off the floor, off you. Each path p has its own gain a_p and delay tau_p:</p>
+
+<pre>
+H(f, t) = sum_p  a_p(t) * exp(-j * 2*pi * f * tau_p(t))
+</pre>
+
+<p>The paths add up with different phases at different frequencies. Where they cancel, the channel has a notch. This is frequency-selective fading, and it is what the 51 amplitudes look like in my lab:</p>
+
+<p><img src="img/04_subcarrier_profile.png" alt="Mean CSI amplitude across the 51 subcarriers, empty room against walking, showing notches"></p>
+
+<p>Empty room: a stable comb, peaks to notches 9 dB, the spread per subcarrier is small (std 0.87). With someone walking the comb smears (std 3.9, 4.5x). The ripple repeats about every 4.3 MHz. For a pure two-path channel that would mean a delay difference of 1 / 4.3 MHz = 230 ns, about 70 m of extra path, which is too much for one room (more likely several paths summed, plus the receiver's own filter shape. With amplitude only I can't separate them).</p>
+
+<p>When a person moves, the path lengths through them change. A reflected path that gets lambda / 2 = 6.1 cm longer has rotated its phase a full turn, so the notches slide around. The rate is the Doppler shift of that path:</p>
+
+<pre>
+f_D = (1 / lambda) * d(path length)/dt
+
+reflection, person walking 1 m/s toward/away:  path changes ~2 m/s
+f_D ~ 2 / 0.1219 = 16 Hz   (upper bound, real motion is slower and mixed)
+</pre>
+
+<p>So 100 frames per second is plenty (Nyquist 50 Hz). The measured amplitude spectrum agrees. Almost all of the motion energy is below 5 Hz:</p>
+
+<p><img src="img/03_spectrum.png" alt="Power spectral density of CSI amplitude fluctuations for walking, fidget, sitting still and empty"></p>
+
+<table>
+<tr><th>Segment</th><th>power 0.3-5 Hz</th><th>vs empty</th></tr>
+<tr><td>walking</td><td>8.07</td><td>96x</td></tr>
+<tr><td>fidget (seated, small moves)</td><td>1.09</td><td>13x</td></tr>
+<tr><td>sitting still</td><td>0.17</td><td>2.0x</td></tr>
+<tr><td>empty</td><td>0.084</td><td>1x</td></tr>
+</table>
+
+<p>Where to put it. CSI sees motion near the line between the router and the receiver, inside roughly the first Fresnel zone:</p>
+
+<pre>
+r_1 = sqrt(lambda * d1 * d2 / (d1 + d2))
+
+example, router 5 m away, person in the middle: r_1 = sqrt(0.1219 * 2.5 * 2.5 / 5) = 0.39 m
+</pre>
+
+<p>That is the strongest zone, not a hard border (the hallway test below shows it reaching through a closed door). Placement turned out to matter more than any setting. Put the Atom so the router-Atom line crosses where people walk. <span class="fill">[fill: distance Atom to router in the library]</span></p>
+
+<h2>Making traffic: never ending ping</h2>
+
+<p>CSI only comes with frames, and an idle room has no traffic. So the Atom makes its own: it pings its router every 10 ms, and every reply brings one CSI frame. A source MAC filter keeps only the router's frames. Same trick as Espressif's <code>csi_recv_router</code> example.</p>
+
+<p>First gate, before anything else was built, 10.5 minutes in an empty room:</p>
+
+<table>
+<tr><th>Median rate</th><th>Min</th><th>Longest gap</th><th>Ping lost</th><th>Queue drops</th></tr>
+<tr><td>100 /s</td><td>95 /s</td><td>85 ms</td><td>0</td><td>0</td></tr>
+</table>
+
+<p>The firmware is C++ on PlatformIO (arduino-esp32 3.3.11 on ESP-IDF 5.5, the pioarduino platform). The Atom ran UIFlow MicroPython before, and MicroPython does not expose the CSI callback, so this is the one part where C++ was not a preference.</p>
+
+<h2>Signal chain</h2>
+
+<p>Per frame, then per window. Everything runs on the Atom; the PC is only a recorder.</p>
+
+<pre>
+1. amplitudes      a_k(t),  k = 1..51
+2. spatial spread  s(t) = std_k( a_k(t) )                 "spatial turbulence"
+3. Hampel filter   window 2K+1 = 7 frames:
+                   m = median, MAD = median(|s - m|)
+                   if |s(t) - m| &gt; 3 * 1.4826 * MAD  then s(t) = m
+4. motion metric   M(t) = var( s ) over the last 1.5 s     (~150 frames)
+
+calibration (button 5 s, leave the room, 60 s recorded):
+   mu, sigma = mean and std of M in the empty room
+   LOW  = max( mu + 3 sigma, 2.5 mu )
+   HIGH = max( mu + 6 sigma, 3.5 mu )
+</pre>
+
+<p>Step 2 and 4 are the same idea as ESPectre's moving variance segmentation. Step 3 is there because single bad frames (one frame much lower on every subcarrier) put a 1.5 s box step into the metric, exactly the length of the window. The Hampel filter replaces them with the local median before they reach the variance.</p>
+
+<p>Why the ratio floors and not just mean + K sigma: see the false alarm part below. Short version, the empty-room metric is not Gaussian at all.</p>
+
+<h2>Test results</h2>
+
+<p>Scripted baselines: the PC speaker reads out cues ("walk around", "sit still", "go to the hallway") and the logger labels the data. 2 minutes per segment, every raw frame recorded. This is run 3, with the video mode running live on the Atom the whole time:</p>
+
+<p><img src="img/01_waterfall_run3.png" alt="CSI amplitude waterfall over 51 subcarriers and the motion metric during the six cued segments"></p>
+
+<p>Top is the raw radio: 51 subcarriers, 83 382 frames. You can see each activity in it without any processing. Walking shakes the whole comb, sitting still moves a notch now and then, the hallway (someone moving outside the closed door) is almost as loud as walking, and the empty room is flat stripes. Bottom is the metric against the calibration mean.</p>
+
+<p><img src="img/02_segments_run3.png" alt="Box plot of the motion metric per segment against LOW"></p>
+
+<table>
+<tr><th>Segment</th><th>median x empty mean</th><th>time above LOW</th><th>what the Atom did</th></tr>
+<tr><td>walking</td><td>45.8</td><td>100 %</td><td>held still</td></tr>
+<tr><td>sitting still</td><td>4.0</td><td>99.7 %</td><td>held still</td></tr>
+<tr><td>sitting with phone</td><td>3.7</td><td>83 %</td><td>held still</td></tr>
+<tr><td>fidget</td><td>8.7</td><td>99.8 %</td><td>held still</td></tr>
+<tr><td>hallway, door shut</td><td>74.4</td><td>100 %</td><td>held still</td></tr>
+<tr><td>empty</td><td>1.6</td><td>0.3 %</td><td>2 moves</td></tr>
+</table>
+
+<p>No move with anyone in the room or at the door. Sitting still is the hard case. In run 2 it scored the same as the empty room (about 1x). In run 3 it was 4x. The Atom sat differently in run 3, and I think placement is most of the difference.</p>
+
+<h2>False alarms: the empty room has heavy tails</h2>
+
+<p>I left the house for an hour with logging on (verified empty). The median metric stayed flat, no drift. But the tails:</p>
+
+<p><img src="img/05_exceedance.png" alt="Upward threshold crossings per hour in an empty room against threshold, with a Gaussian for comparison"></p>
+
+<table>
+<tr><th>Threshold (x mean)</th><th>1.5</th><th>2</th><th>2.5</th><th>3</th><th>3.5</th><th>5</th></tr>
+<tr><td>Crossings per hour, empty</td><td>434</td><td>157</td><td>54</td><td>21</td><td>10</td><td>4</td></tr>
+</table>
+
+<p>In units of its own mean the empty metric has std 1.02, the shape of an exponential, not a bell. A Gaussian with the same mean and std would almost never pass 5x. The real room does it 4 times an hour, and nothing above 3x lasted over 1.5 s. So mean + 6 sigma from a 60 s calibration was far too tight (the calibration std was 0.0029, it does not describe an hour), and the floors went in: LOW 2.5x, HIGH 3.5x. People walking are 20-100x, so there is plenty of room between.</p>
+
+<p>And a false alarm here costs almost nothing. It only means the doll waits a bit longer. 54 crossings an hour at LOW looks bad, but each one is short and only restarts a 10 s quiet timer.</p>
+
+<h2>State machine</h2>
+
+<p><img src="img/07_state_machine.png" alt="State machine: ACTIVE, QUIET_PENDING, EMPTY, MOVING, STALE and the strong-event hold"></p>
+
+<ul>
+<li>Anything above LOW counts as presence: resets the quiet timer, blocks moves, freezes a move in progress. The head stops in whatever pose it has. It does not go back (a still head in a new pose is creepier than one going back to zero).</li>
+<li>10 s below LOW and the room is EMPTY.</li>
+<li>Strong-event hold. When I came back into the room the metric hit 67-189x. When the metric goes over about 10x the mean, someone was surely here, and they may now sit perfectly still. So it waits 30 s after the last strong event on top of the 10 s. Found this in the simulation of a recording where I came back and sat still: without the hold a move started with me in the room.</li>
+<li>STALE: if CSI stops (rate below 20/s for 2 s) it never moves. Missing data is not an empty room.</li>
+<li>It never moves on boot. The angle is saved to flash after every move.</li>
+</ul>
+
+<p>In EMPTY it "haunts": every 8-35 s a move to a random pose between 30 and 150 degrees. Mostly a slow creep (40-110 ms per degree), 25 % a snap (6 ms per degree), 15 % a small 8 degree twitch, and 25 % of moves end staring into the camera.</p>
+
+<h2>Does the servo see itself?</h2>
+
+<p>A motor moving right next to the antenna is motion too. If it pushed the metric over LOW, every move would freeze itself. 75 minutes, house empty, 167 moves:</p>
+
+<p><img src="img/06_servo_self_noise.png" alt="Motion metric relative to LOW from 5 s before to 8 s after each servo move"></p>
+
+<p>Nothing. Median 0.42x LOW before a move, and the 95th percentile peaks at 0.57x LOW during it. One freeze in the whole run, during a burst of weak disturbance with no move involved (4.1x mean, cause unknown). This was without the head. <span class="fill">[fill: same with the head on]</span></p>
+
+<h2>What broke</h2>
+
+<ul>
+<li><b>Serial blocked the loop.</b> With nothing reading USB serial, every <code>Serial.printf</code> waited the 100 ms TX timeout. Main loop down to 1 Hz, the rate counter showed 200/s. The prop runs on a charger with no reader, so it would have hit for real. <code>Serial.setTxTimeoutMs(0)</code>.</li>
+<li><b>Zero frames after the first flash.</b> CSI arrived at full rate but every frame failed the MAC filter. Probably a mesh roam to another Nest node while the filter held the BSSID from boot. Now the filter is refreshed on every connect, and the calibrated AP is pinned.</li>
+<li><b>1 second holes.</b> esp_ping waits for each reply or the timeout before the next request. With the default 1000 ms, every lost reply was a 1 s hole in the CSI (rate 0-19/s, STALE). 100 ms timeout fixed it.</li>
+<li><b>Run 1 was invalid.</b> The cues played, but I was on a phone call at the desk the whole 9 minutes. Every label really meant "one person on the phone". Lesson: confirm someone is ready before a cued recording.</li>
+<li><b>Single-frame glitches</b> made 1.5 s box steps. Hampel filter.</li>
+<li><b>Drift.</b> 1.5 h after a calibration the empty room sat at 1.6x the calibrated mean, and LOW at 2.0x was crossed 40 times by a hair. First move came 131 s after I left. LOW 2.5x: 42 s. Calibrate shortly before filming.</li>
+<li><b>Unexplained bumps.</b> In the verified empty recording, clusters of 3-18 s at 2.6-4.0x with RSSI flat. Cause unknown. They only make it wait.</li>
+<li><b>Freeze at LOW froze 11 % of moves for nothing</b> in the empty hour, when LOW was still mean + 3 sigma. With the 2.5x floor it is gone.</li>
+</ul>
+
+<h2>Tools</h2>
+
+<p>"Real or bust": every trace in this post and on the screens is measured data, nothing synthetic.</p>
+
+<ul>
+<li>The Atom's own screen is a scope: per-frame CSI (green), the metric with LOW/HIGH (amber), and the 51 subcarrier amplitudes of the latest frame (cyan bars). Useful for placement, you walk around and watch it.</li>
+<li><code>tools/scope.py</code>, a full screen PC scope: subcarrier waterfall, metric, spectrum and a big state line ("EMPTY   moving in 7 s"). Also as a single exe for a laptop without Python. It says hello on UDP broadcast and the Atom streams to it, no reflashing.</li>
+<li><code>tools/detector.py</code> is a Python copy of the firmware detector. It reads its constants from <code>config.h</code>, so the two cannot drift on numbers. <code>replay.py</code> and <code>haunt_sim.py</code> run recordings through it, 27 unit tests, one per rule.</li>
+<li><code>tools/post_figures.py</code> made every chart here from the logs.</li>
+</ul>
+
+<p><img src="img/photo_lab_red.jpg" alt="AtomS3R scope page glowing in red lab light, 22:12 on the clock behind"></p>
+
+<h2>Build your own</h2>
+
+<ol>
+<li>Clone the repo, copy <code>firmware/include/secrets.example.h</code> to <code>secrets.h</code>, set SSID (2.4 GHz), password and your PC's IP.</li>
+<li><code>py -m pip install --user platformio pyserial numpy</code>. Run PlatformIO from PowerShell or cmd, not Git Bash.</li>
+<li><code>cd firmware</code>, <code>py -m platformio run -t upload</code>.</li>
+<li>Wire the servo (GND, 5V, signal on G2). Check the colours with a meter.</li>
+<li>Place the Atom so the router line crosses the room. Hold the button 5 s, leave for 90 s.</li>
+<li>Optional: <code>py tools/scope.py</code> on the PC to watch it think.</li>
+</ol>
+
+<p>Button: short press cycles scope, status and screen off. Held 2-5 s, the head returns slowly to the start pose. Held 5 s or more, calibration.</p>
+
+<p>Not done yet: the IMU is on the board and could lock the servo when someone lifts the doll.</p>
+
+<p>Code: <a href="https://github.com/apn201/nobody_home">github.com/apn201/nobody_home</a> (GPL-2.0)</p>
+
+<h1>References</h1>
+
+<ol>
+<li>Espressif, ESP-CSI: examples and tools for Wi-Fi Channel State Information on ESP32, including <code>csi_recv_router</code>. <a href="https://github.com/espressif/esp-csi">https://github.com/espressif/esp-csi</a></li>
+<li>Espressif, ESP-IDF Programming Guide, Wi-Fi Channel State Information. <a href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-guides/wifi.html#wi-fi-channel-state-information">https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-guides/wifi.html</a></li>
+<li>F. Pace, ESPectre: motion detection with Wi-Fi CSI on ESP32 (moving variance segmentation). <a href="https://github.com/francescopace/espectre">https://github.com/francescopace/espectre</a></li>
+<li>F. Adib, D. Katabi, "See Through Walls with Wi-Fi!", ACM SIGCOMM 2013, CCR 43(4), 75-86. doi:10.1145/2534169.2486039. <a href="https://www.mit.edu/~fadel/papers/wivi-paper.pdf">https://www.mit.edu/~fadel/papers/wivi-paper.pdf</a></li>
+<li>F. R. Hampel, "The influence curve and its role in robust estimation", Journal of the American Statistical Association 69(346), 1974.</li>
+<li>IEEE 802.11-2020, clause 19 (HT PHY) and 17 (OFDM PHY): subcarrier spacing and the L-LTF training field.</li>
+<li>M5Stack AtomS3R documentation. <a href="https://docs.m5stack.com/en/core/AtomS3R">https://docs.m5stack.com/en/core/AtomS3R</a></li>
+<li>pioarduino, PlatformIO platform for arduino-esp32 3.x. <a href="https://github.com/pioarduino/platform-espressif32">https://github.com/pioarduino/platform-espressif32</a></li>
+<li>Micro Arcade, the previous life of this AtomS3R. <a href="https://github.com/apn201/Micro_Arcade">https://github.com/apn201/Micro_Arcade</a></li>
+</ol>
+
+</body>
+</html>

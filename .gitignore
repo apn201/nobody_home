@@ -1,0 +1,8 @@
+firmware/include/secrets.h
+.pio/
+firmware/.pio/
+__pycache__/
+*.pyc
+logs/
+backup/
+dist/

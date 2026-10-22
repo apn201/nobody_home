@@ -1,5 +1,7 @@
 # Nobody Home
 
+Video: https://www.youtube.com/watch?v=jTFQheh9W2k
+
 A doll head that only turns when WiFi CSI says the room is empty. Entry for the element14 Community 2026 Halloween Hackathon. Full brief: [nobody-home-spec.md](nobody-home-spec.md).
 
 Status: phases 1-3 gates passed (phase 3 on replayed data). Device calibration not yet run in the real room. Phase 4 (servo) next.

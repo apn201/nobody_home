@@ -25,7 +25,7 @@
 
 <div class="field"><b>Abstract</b> (214 characters)<br>A cursed doll turns its head only when nobody is there. No PIR, no camera. An M5Stack AtomS3R pings the router 100 times a second and reads WiFi CSI. Anyone moving nearby, even behind a closed door, and it freezes.</div>
 
-<div class="field"><b>Thumbnail</b><br>img/thumbnail_300.png (made from the real CSI waterfall). A crop of the doll photo works too.</div>
+<div class="field"><b>Thumbnail</b><br>img/thumbnail_doll_300.jpg (the doll on the shelf, cropped square). Alternative: img/thumbnail_300.png, made from the real CSI waterfall.</div>
 
 <div class="field"><b>Tags</b><br>halloween, esp32, esp32-s3, m5stack, wifi, csi, rf, signal processing, servo, sg90, animatronic, 3d printing</div>
 
@@ -33,7 +33,7 @@
 
 <h2>A doll that moves when nobody is home</h2>
 
-<p><img src="img/photo_doll.jpg" alt="Baby doll on the desk with an SG90 servo in its neck, AtomS3R next to it showing the CSI scope"></p>
+<p><img src="img/photo_doll.jpg" alt="Baby doll sitting on a shelf on top of a board game box, a thin orange servo wire running from its neck"></p>
 
 <p>This is a doll that turns its head only when nobody is in the room. Actually it is an M5Stack AtomS3R and a SG90 micro servo, listening to wifi. The router is the only sensor. When someone comes near, even outside a closed door, it stops dead in whatever pose it has reached, and waits.</p>
 
@@ -61,13 +61,15 @@
 <tr><td>Wifi router (Google Nest mesh, channel 11)</td><td>The transmitter. Already there.</td></tr>
 </table>
 
-<p><img src="img/photo_bench.jpg" alt="AtomS3R showing the live CSI scope next to a bare SG90 servo"></p>
+<p><img src="img/photo_bench.jpg" alt="AtomS3R in its printed case showing the live CSI scope, next to a bare SG90 servo with its horn"></p>
+
+<p><img src="img/photo_wiring.jpg" alt="Bench photo: AtomS3R with the Grove cable, a bare SG90 servo with a printed adapter on its horn, jumper leads on the right"></p>
 
 <p><img src="img/08_wiring.png" alt="Wiring: AtomS3R Grove GND, 5V and G2 to the SG90 brown, red and orange wires"></p>
 
 <p>Wiring is three wires. I had to swap two of them before it moved (the colours on my Grove cable did not match M5's table, so check with a meter). The spec had a 1000 uF capacitor across the servo supply, against brownouts when servo current and wifi TX peak together. In the first 75 minute run with 167 moves there was not a single reset without it, but that run had nothing on the horn. <span class="fill">[fill: did it reset with the head on? cap added or not?]</span></p>
 
-<p><img src="img/photo_neck.jpg" alt="3D printed adapter between the servo horn and the doll's neck, servo visible inside the body"></p>
+<p><img src="img/photo_neck.jpg" alt="Doll with the head lifted: a 3D printed adapter on the servo horn holds the neck, the blue SG90 sits inside the body"></p>
 
 <p>The neck: <span class="fill">[fill: two lines on the printed adapter, how it holds the horn and the head]</span></p>
 
@@ -248,7 +250,9 @@ calibration (button 5 s, leave the room, 60 s recorded):
 <li><code>tools/post_figures.py</code> made every chart here from the logs.</li>
 </ul>
 
-<p><img src="img/photo_lab_red.jpg" alt="AtomS3R scope page glowing in red lab light, 22:12 on the clock behind"></p>
+<p><img src="img/photo_scope_desk.jpg" alt="Desk with the PC scope showing the CSI waterfall, trace and motion metric, and the AtomS3R with the servo in front of the keyboard"></p>
+
+<p><img src="img/photo_lab_red.jpg" alt="AtomS3R scope page in red lab light, with 22:12 on the clock behind"></p>
 
 <h2>Build your own</h2>
 
